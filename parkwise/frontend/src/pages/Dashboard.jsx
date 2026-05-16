@@ -5,6 +5,7 @@ import CampusMap from "../components/CampusMap";
 import AnalyticsCharts from "../components/AnalyticsCharts";
 import AICameraSimulation from "../components/AICameraSimulation";
 import SmartAllocation from "../components/SmartAllocation";
+import SmartAlerts from "../components/SmartAlerts";
 
 function Dashboard() {
   const [zones, setZones] = useState([]);
@@ -199,6 +200,8 @@ function Dashboard() {
           Stop Simulation
         </button>
       </div>
+
+      <SmartAlerts zones={zones} />
 
       <CampusMap zones={zones} />
 

@@ -62,12 +62,13 @@ body {
   transform: translateY(-2px);
 }
 
-/* COMMON SECTIONS */
+/* COMMON CARDS */
 
 .campus-map,
 .analytics-section,
 .ai-camera-section,
 .smart-allocation-section,
+.smart-alerts-section,
 .logs,
 .zone-card,
 .stat-card,
@@ -174,6 +175,82 @@ button.exit {
 
 .sim-stop {
   background: linear-gradient(135deg, #dc2626, #ef4444);
+}
+
+/* SMART ALERTS */
+
+.smart-alerts-section {
+  margin-bottom: 30px;
+  padding: 28px;
+}
+
+.alerts-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 22px;
+}
+
+.alerts-header svg {
+  color: #facc15;
+}
+
+.alerts-header h2 {
+  margin: 0;
+}
+
+.alerts-header p {
+  margin-top: 5px;
+  color: #cbd5e1;
+}
+
+.alerts-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 18px;
+}
+
+.alert-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  padding: 20px;
+  border-radius: 18px;
+  background: #0f172a;
+  border: 1px solid #334155;
+}
+
+.alert-card h3 {
+  margin: 0;
+}
+
+.alert-card p {
+  margin: 6px 0 0;
+  color: #cbd5e1;
+}
+
+.warning-alert {
+  border-left: 5px solid #facc15;
+}
+
+.warning-alert svg {
+  color: #facc15;
+}
+
+.critical-alert {
+  border-left: 5px solid #ef4444;
+}
+
+.critical-alert svg {
+  color: #ef4444;
+}
+
+.safe-alert {
+  border-left: 5px solid #22c55e;
+}
+
+.safe-alert svg {
+  color: #22c55e;
 }
 
 /* CAMPUS MAP */
@@ -291,28 +368,30 @@ button.exit {
 }
 
 /* LIVE COUNTER */
-
 .real-campus-counter {
   position: absolute;
+  top: 24px;
   right: 24px;
-  bottom: 24px;
-  width: 170px;
-  padding: 18px;
+  width: 135px;
+  padding: 14px;
   text-align: center;
-  border-radius: 22px;
+  border-radius: 20px;
   background: linear-gradient(135deg, #2563eb, #14b8a6);
   box-shadow: 0 12px 30px rgba(0, 0, 0, 0.35);
+  z-index: 12;
 }
 
 .real-campus-counter h2 {
   margin: 0;
-  font-size: 42px;
+  font-size: 32px;
+  line-height: 1;
 }
 
 .real-campus-counter p {
   margin-top: 6px;
-  font-size: 14px;
+  font-size: 12px;
   font-weight: bold;
+  line-height: 1.4;
 }
 
 /* AI CAMERA + SMART ALLOCATION */
@@ -602,6 +681,7 @@ select {
 .light-theme .analytics-section,
 .light-theme .ai-camera-section,
 .light-theme .smart-allocation-section,
+.light-theme .smart-alerts-section,
 .light-theme .logs {
   background: white;
   color: #0f172a;
@@ -612,7 +692,8 @@ select {
 .light-theme .allocation-control,
 .light-theme .allocation-result,
 .light-theme .algorithm-box,
-.light-theme .chart-card {
+.light-theme .chart-card,
+.light-theme .alert-card {
   background: #f8fafc;
 }
 
@@ -640,6 +721,7 @@ select {
 .cyber-theme .analytics-section,
 .cyber-theme .ai-camera-section,
 .cyber-theme .smart-allocation-section,
+.cyber-theme .smart-alerts-section,
 .cyber-theme .logs {
   background: #10002b;
   border: 1px solid #ff00cc;
@@ -650,7 +732,8 @@ select {
 .cyber-theme .allocation-control,
 .cyber-theme .allocation-result,
 .cyber-theme .algorithm-box,
-.cyber-theme .chart-card {
+.cyber-theme .chart-card,
+.cyber-theme .alert-card {
   background: #09001f;
   border: 1px solid #00ffcc;
 }
