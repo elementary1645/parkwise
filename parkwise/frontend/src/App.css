@@ -1,0 +1,154 @@
+body {
+  margin: 0;
+  font-family: Arial, sans-serif;
+  background: #0f172a;
+  color: white;
+}
+
+.dashboard {
+  padding: 30px;
+}
+
+.hero {
+  background: linear-gradient(135deg, #2563eb, #14b8a6);
+  padding: 35px;
+  border-radius: 24px;
+  margin-bottom: 30px;
+}
+
+.hero h1 {
+  font-size: 48px;
+  margin: 0;
+}
+
+.hero p {
+  font-size: 18px;
+  opacity: 0.9;
+}
+
+.stats-grid,
+.zones-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 20px;
+}
+
+.stat-card,
+.zone-card,
+.formula-box,
+.logs {
+  background: #1e293b;
+  border-radius: 20px;
+  padding: 22px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+}
+
+.stat-card svg {
+  width: 32px;
+  height: 32px;
+}
+
+.stat-card h3 {
+  color: #cbd5e1;
+}
+
+.stat-card h2 {
+  font-size: 34px;
+}
+
+.green svg {
+  color: #22c55e;
+}
+
+.red svg {
+  color: #ef4444;
+}
+
+.formula-box {
+  display: flex;
+  gap: 20px;
+  align-items: center;
+  margin: 25px 0;
+  border-left: 6px solid #38bdf8;
+}
+
+.formula-box svg {
+  color: #38bdf8;
+  width: 40px;
+  height: 40px;
+}
+
+.section-title {
+  margin-top: 30px;
+}
+
+.zone-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.badge {
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 13px;
+}
+
+.open {
+  background: #14532d;
+  color: #86efac;
+}
+
+.full {
+  background: #7f1d1d;
+  color: #fecaca;
+}
+
+.progress-bar {
+  height: 12px;
+  background: #334155;
+  border-radius: 20px;
+  overflow: hidden;
+  margin: 15px 0;
+}
+
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #22c55e, #eab308, #ef4444);
+}
+
+.zone-details {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+  color: #cbd5e1;
+}
+
+.buttons {
+  display: flex;
+  gap: 10px;
+  margin-top: 18px;
+}
+
+button {
+  flex: 1;
+  padding: 12px;
+  border: none;
+  border-radius: 14px;
+  background: #2563eb;
+  color: white;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+button:hover {
+  opacity: 0.85;
+}
+
+button.exit {
+  background: #dc2626;
+}
+
+.logs {
+  margin-top: 30px;
+}
