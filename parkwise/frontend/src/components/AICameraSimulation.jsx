@@ -1,5 +1,7 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { Camera, Upload, CheckCircle, XCircle } from "lucide-react";
+import * as cocoSsd from "@tensorflow-models/coco-ssd";
+import "@tensorflow/tfjs";
 import API from "../services/api";
 
 function AICameraSimulation({ zones, fetchZones, setLogs, setCalculation }) {
@@ -9,6 +11,11 @@ function AICameraSimulation({ zones, fetchZones, setLogs, setCalculation }) {
   const [detectionStatus, setDetectionStatus] = useState("Waiting for image...");
   const [isDetecting, setIsDetecting] = useState(false);
   const [detected, setDetected] = useState(null);
+  const [predictions, setPredictions] = useState([]);
+
+  const imageRef = useRef(null);
+
+  const vehicleClasses = ["car", "truck", "bus", "motorcycle", "bicycle"];
 
   const handleImageUpload = (e) => {
     const file = e.target.files[0];
@@ -17,13 +24,14 @@ function AICameraSimulation({ zones, fetchZones, setLogs, setCalculation }) {
 
     setSelectedImage(file);
     setPreview(URL.createObjectURL(file));
-    setDetectionStatus("Image uploaded. Ready for AI detection.");
+    setDetectionStatus("Image uploaded. Ready for real AI detection.");
     setDetected(null);
+    setPredictions([]);
   };
 
   const runAIDetection = async () => {
     if (!selectedImage) {
-      alert("Please upload a vehicle image first");
+      alert("Please upload an image first");
       return;
     }
 
@@ -33,42 +41,53 @@ function AICameraSimulation({ zones, fetchZones, setLogs, setCalculation }) {
     }
 
     setIsDetecting(true);
-    setDetectionStatus("AI camera scanning image...");
+    setDetectionStatus("Loading AI model and scanning image...");
 
-    setTimeout(async () => {
-      try {
-        const isVehicleDetected = true;
+    try {
+      const model = await cocoSsd.load();
 
-        if (isVehicleDetected) {
-          const res = await API.put(`/parking/${selectedZone}/entry`);
+      const results = await model.detect(imageRef.current);
 
-          setDetected(true);
-          setDetectionStatus("Vehicle detected successfully");
+      setPredictions(results);
 
-          setCalculation(`AI Camera Entry Calculation: ${res.data.formula}`);
+      const vehicleDetected = results.find(
+        (item) =>
+          vehicleClasses.includes(item.class) && item.score >= 0.45
+      );
 
-          const zoneName =
-            zones.find((zone) => zone._id === selectedZone)?.zoneName ||
-            "selected zone";
+      if (vehicleDetected) {
+        const res = await API.put(`/parking/${selectedZone}/entry`);
 
-          setLogs((prev) => [
-            `AI Camera detected vehicle entering ${zoneName}`,
-            ...prev.slice(0, 9),
-          ]);
+        const zoneName =
+          zones.find((zone) => zone._id === selectedZone)?.zoneName ||
+          "selected zone";
 
-          fetchZones();
-        } else {
-          setDetected(false);
-          setDetectionStatus("No vehicle detected");
-        }
-      } catch (error) {
-        alert(error.response?.data?.message || "AI detection failed");
+        setDetected(true);
+        setDetectionStatus(
+          `Vehicle detected: ${vehicleDetected.class} (${Math.round(
+            vehicleDetected.score * 100
+          )}% confidence)`
+        );
+
+        setCalculation(`Real AI Camera Entry Calculation: ${res.data.formula}`);
+
+        setLogs((prev) => [
+          `Real AI detected ${vehicleDetected.class} entering ${zoneName}`,
+          ...prev.slice(0, 9),
+        ]);
+
+        fetchZones();
+      } else {
         setDetected(false);
-        setDetectionStatus("Detection failed");
-      } finally {
-        setIsDetecting(false);
+        setDetectionStatus("No vehicle detected in this image");
       }
-    }, 1800);
+    } catch (error) {
+      console.log(error);
+      setDetected(false);
+      setDetectionStatus("AI detection failed");
+    } finally {
+      setIsDetecting(false);
+    }
   };
 
   return (
@@ -76,8 +95,8 @@ function AICameraSimulation({ zones, fetchZones, setLogs, setCalculation }) {
       <div className="ai-camera-header">
         <Camera size={34} />
         <div>
-          <h2>AI Camera Simulation</h2>
-          <p>Upload a vehicle image and simulate automatic vehicle detection</p>
+          <h2>Real AI Camera Detection</h2>
+          <p>Upload an image and detect vehicles using TensorFlow.js</p>
         </div>
       </div>
 
@@ -91,7 +110,7 @@ function AICameraSimulation({ zones, fetchZones, setLogs, setCalculation }) {
 
           {preview && (
             <div className="image-preview">
-              <img src={preview} alt="Vehicle preview" />
+              <img ref={imageRef} src={preview} alt="Vehicle preview" />
             </div>
           )}
         </div>
@@ -112,7 +131,7 @@ function AICameraSimulation({ zones, fetchZones, setLogs, setCalculation }) {
           </select>
 
           <button onClick={runAIDetection} disabled={isDetecting}>
-            {isDetecting ? "Scanning..." : "Run AI Detection"}
+            {isDetecting ? "Scanning with AI..." : "Run Real AI Detection"}
           </button>
 
           <div className="detection-status">
@@ -125,11 +144,23 @@ function AICameraSimulation({ zones, fetchZones, setLogs, setCalculation }) {
             </div>
           </div>
 
+          {predictions.length > 0 && (
+            <div className="prediction-box">
+              <h4>AI Predictions</h4>
+              {predictions.map((item, index) => (
+                <p key={index}>
+                  {item.class} — {Math.round(item.score * 100)}%
+                </p>
+              ))}
+            </div>
+          )}
+
           <div className="ai-explanation">
             <h4>How it works</h4>
             <p>
-              Camera captures image → AI detects vehicle → backend increments
-              vehicle count → dashboard updates automatically.
+              Image is passed to TensorFlow.js COCO-SSD model. If a car, bus,
+              truck, motorcycle or bicycle is detected, the backend increases
+              the parking count automatically.
             </p>
           </div>
         </div>

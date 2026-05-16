@@ -1,38 +1,44 @@
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Car, LogIn, LogOut, ParkingCircle, Activity } from "lucide-react";
 import API from "../services/api";
 import CampusMap from "../components/CampusMap";
 import AnalyticsCharts from "../components/AnalyticsCharts";
 import AICameraSimulation from "../components/AICameraSimulation";
+import SmartAllocation from "../components/SmartAllocation";
 
 function Dashboard() {
   const [zones, setZones] = useState([]);
   const [logs, setLogs] = useState([]);
   const [calculation, setCalculation] = useState("Waiting for simulation...");
   const [isSimulating, setIsSimulating] = useState(false);
+  const [theme, setTheme] = useState("dark");
+
   const simulationRef = useRef(null);
 
   const fetchZones = async () => {
-    const res = await API.get("/parking");
-    setZones(res.data);
+    try {
+      const res = await API.get("/parking");
+      setZones(res.data);
+    } catch (error) {
+      console.log("Error fetching zones:", error.message);
+    }
   };
 
   useEffect(() => {
     fetchZones();
-  }, []);
 
-  useEffect(() => {
-  return () => clearInterval(simulationRef.current);
+    return () => {
+      if (simulationRef.current) {
+        clearInterval(simulationRef.current);
+      }
+    };
   }, []);
 
   const handleEntry = async (zoneId, zoneName) => {
     try {
       const res = await API.put(`/parking/${zoneId}/entry`);
       setCalculation(`Entry Calculation: ${res.data.formula}`);
-      setLogs((prev) => [
-        `Vehicle entered ${zoneName}`,
-        ...prev.slice(0, 7),
-      ]);
+      setLogs((prev) => [`Vehicle entered ${zoneName}`, ...prev.slice(0, 9)]);
       fetchZones();
     } catch (error) {
       alert(error.response?.data?.message || "Entry failed");
@@ -43,10 +49,7 @@ function Dashboard() {
     try {
       const res = await API.put(`/parking/${zoneId}/exit`);
       setCalculation(`Exit Calculation: ${res.data.formula}`);
-      setLogs((prev) => [
-        `Vehicle exited ${zoneName}`,
-        ...prev.slice(0, 7),
-      ]);
+      setLogs((prev) => [`Vehicle exited ${zoneName}`, ...prev.slice(0, 9)]);
       fetchZones();
     } catch (error) {
       alert(error.response?.data?.message || "Exit failed");
@@ -54,69 +57,88 @@ function Dashboard() {
   };
 
   const startAutoSimulation = () => {
-  if (isSimulating) return;
+    if (isSimulating) return;
 
-  setIsSimulating(true);
+    setIsSimulating(true);
 
-  simulationRef.current = setInterval(async () => {
-    try {
-      const latestZones = await API.get("/parking");
-      const allZones = latestZones.data;
+    simulationRef.current = setInterval(async () => {
+      try {
+        const latestZones = await API.get("/parking");
+        const allZones = latestZones.data;
 
-      if (allZones.length === 0) return;
+        if (allZones.length === 0) return;
 
-      const randomZone = allZones[Math.floor(Math.random() * allZones.length)];
-      const available = randomZone.totalSlots - randomZone.occupiedSlots;
+        const randomZone = allZones[Math.floor(Math.random() * allZones.length)];
+        const available = randomZone.totalSlots - randomZone.occupiedSlots;
 
-      const action =
-        available === 0
-          ? "exit"
-          : randomZone.occupiedSlots === 0
-          ? "entry"
-          : Math.random() > 0.45
-          ? "entry"
-          : "exit";
+        const action =
+          available === 0
+            ? "exit"
+            : randomZone.occupiedSlots === 0
+            ? "entry"
+            : Math.random() > 0.45
+            ? "entry"
+            : "exit";
 
-      if (action === "entry") {
-        const res = await API.put(`/parking/${randomZone._id}/entry`);
-        setCalculation(`AI Entry Calculation: ${res.data.formula}`);
-        setLogs((prev) => [
-          `AI detected vehicle entering ${randomZone.zoneName}`,
-          ...prev.slice(0, 9),
-        ]);
-      } else {
-        const res = await API.put(`/parking/${randomZone._id}/exit`);
-        setCalculation(`AI Exit Calculation: ${res.data.formula}`);
-        setLogs((prev) => [
-          `AI detected vehicle exiting ${randomZone.zoneName}`,
-          ...prev.slice(0, 9),
-        ]);
+        if (action === "entry") {
+          const res = await API.put(`/parking/${randomZone._id}/entry`);
+          setCalculation(`AI Entry Calculation: ${res.data.formula}`);
+          setLogs((prev) => [
+            `AI detected vehicle entering ${randomZone.zoneName}`,
+            ...prev.slice(0, 9),
+          ]);
+        } else {
+          const res = await API.put(`/parking/${randomZone._id}/exit`);
+          setCalculation(`AI Exit Calculation: ${res.data.formula}`);
+          setLogs((prev) => [
+            `AI detected vehicle exiting ${randomZone.zoneName}`,
+            ...prev.slice(0, 9),
+          ]);
+        }
+
+        fetchZones();
+      } catch (error) {
+        console.log("Simulation error:", error.message);
       }
+    }, 2500);
+  };
 
-      fetchZones();
-    } catch (error) {
-      console.log("Simulation error:", error.message);
+  const stopAutoSimulation = () => {
+    if (simulationRef.current) {
+      clearInterval(simulationRef.current);
+      simulationRef.current = null;
     }
-  }, 2500);
-};
 
-const stopAutoSimulation = () => {
-  clearInterval(simulationRef.current);
-  setIsSimulating(false);
-  setLogs((prev) => ["AI traffic simulation stopped", ...prev.slice(0, 9)]);
-};
+    setIsSimulating(false);
+    setLogs((prev) => ["AI traffic simulation stopped", ...prev.slice(0, 9)]);
+  };
 
   const totalSlots = zones.reduce((sum, zone) => sum + zone.totalSlots, 0);
   const occupiedSlots = zones.reduce((sum, zone) => sum + zone.occupiedSlots, 0);
   const totalEntries = zones.reduce((sum, zone) => sum + zone.entryCount, 0);
   const totalExits = zones.reduce((sum, zone) => sum + zone.exitCount, 0);
   const availableSlots = totalSlots - occupiedSlots;
+  const vehiclesInside = totalEntries - totalExits;
 
   return (
-    <div className="dashboard">
+    <div className={`dashboard ${theme}-theme`}>
       <div className="hero">
         <h1>ParkWise</h1>
         <p>Smart Campus Parking Simulation System</p>
+      </div>
+
+      <div className="theme-switcher">
+        <button type="button" onClick={() => setTheme("dark")}>
+          Dark
+        </button>
+
+        <button type="button" onClick={() => setTheme("light")}>
+          Light
+        </button>
+
+        <button type="button" onClick={() => setTheme("cyber")}>
+          Cyberpunk
+        </button>
       </div>
 
       <div className="stats-grid">
@@ -143,6 +165,12 @@ const stopAutoSimulation = () => {
           <h3>Total Exits</h3>
           <h2>{totalExits}</h2>
         </div>
+
+        <div className="stat-card">
+          <ParkingCircle />
+          <h3>Available Slots</h3>
+          <h2>{availableSlots}</h2>
+        </div>
       </div>
 
       <div className="formula-box">
@@ -152,12 +180,14 @@ const stopAutoSimulation = () => {
           <p>{calculation}</p>
           <small>
             Vehicles inside campus = Total Entries - Total Exits ={" "}
-            {totalEntries} - {totalExits} = {totalEntries - totalExits}
+            {totalEntries} - {totalExits} = {vehiclesInside}
           </small>
         </div>
       </div>
+
       <div className="simulation-controls">
         <button
+          type="button"
           className={isSimulating ? "sim-active" : "sim-start"}
           onClick={startAutoSimulation}
           disabled={isSimulating}
@@ -165,18 +195,27 @@ const stopAutoSimulation = () => {
           Start AI Traffic Simulation
         </button>
 
-        <button className="sim-stop" onClick={stopAutoSimulation}>
+        <button type="button" className="sim-stop" onClick={stopAutoSimulation}>
           Stop Simulation
         </button>
       </div>
 
       <CampusMap zones={zones} />
+
       <AICameraSimulation
         zones={zones}
         fetchZones={fetchZones}
         setLogs={setLogs}
         setCalculation={setCalculation}
       />
+
+      <SmartAllocation
+        zones={zones}
+        fetchZones={fetchZones}
+        setLogs={setLogs}
+        setCalculation={setCalculation}
+      />
+
       <AnalyticsCharts zones={zones} />
 
       <h2 className="section-title">Parking Zones</h2>
@@ -215,11 +254,15 @@ const stopAutoSimulation = () => {
               </div>
 
               <div className="buttons">
-                <button onClick={() => handleEntry(zone._id, zone.zoneName)}>
+                <button
+                  type="button"
+                  onClick={() => handleEntry(zone._id, zone.zoneName)}
+                >
                   Vehicle Entry
                 </button>
 
                 <button
+                  type="button"
                   className="exit"
                   onClick={() => handleExit(zone._id, zone.zoneName)}
                 >
@@ -233,6 +276,7 @@ const stopAutoSimulation = () => {
 
       <div className="logs">
         <h2>Live Simulation Logs</h2>
+
         {logs.length === 0 ? (
           <p>No vehicle movement yet.</p>
         ) : (

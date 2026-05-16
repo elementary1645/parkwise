@@ -1,75 +1,77 @@
-import { motion } from "framer-motion";
-import { Car, ParkingCircle, Building2 } from "lucide-react";
+import { ParkingCircle, MapPin } from "lucide-react";
 
 function CampusMap({ zones }) {
   const totalEntries = zones.reduce((sum, zone) => sum + zone.entryCount, 0);
   const totalExits = zones.reduce((sum, zone) => sum + zone.exitCount, 0);
   const vehiclesInside = totalEntries - totalExits;
 
+  const mapZones = [
+    {
+      name: "Main Gate Parking",
+      top: "72%",
+      left: "20%",
+    },
+    {
+      name: "Library Block Parking",
+      top: "28%",
+      left: "58%",
+    },
+    {
+      name: "Hostel Parking",
+      top: "53%",
+      left: "76%",
+    },
+    {
+      name: "Admin Block Parking",
+      top: "20%",
+      left: "30%",
+    },
+  ];
+
+  const getZoneData = (name) => zones.find((zone) => zone.zoneName === name);
+
   return (
     <div className="campus-map">
       <div className="map-header">
-        <h2>Animated Campus Map</h2>
-        <p>Live smart-campus vehicle movement simulation</p>
+        <h2>MSRIT Smart Campus Map</h2>
+        <p>Real-time parking allocation over actual campus layout</p>
       </div>
 
-      <div className="clean-map-area">
-        <div className="entry-gate-clean">ENTRY GATE</div>
-        <div className="exit-gate-clean">EXIT GATE</div>
+      <div className="real-campus-map">
+        <img src="/campus-map.png" alt="Campus Map" className="campus-bg" />
 
-        <div className="main-road-clean"></div>
-        <div className="cross-road-clean"></div>
-
-        <motion.div
-          className="animated-car car-a"
-          animate={{ x: [0, 260, 520] }}
-          transition={{ duration: 5, repeat: Infinity, ease: "linear" }}
-        >
-          <Car size={30} />
-        </motion.div>
-
-        <motion.div
-          className="animated-car car-b"
-          animate={{ y: [0, 170, 300] }}
-          transition={{ duration: 6, repeat: Infinity, ease: "linear" }}
-        >
-          <Car size={30} />
-        </motion.div>
-
-        <div className="map-building building-one">
-          <Building2 size={24} />
-          <span>Admin Block</span>
+        <div className="map-pin main-entry">
+          <MapPin size={18} />
+          <span>Entry</span>
         </div>
 
-        <div className="map-building building-two">
-          <Building2 size={24} />
-          <span>Library</span>
+        <div className="map-pin exit-point">
+          <MapPin size={18} />
+          <span>Exit</span>
         </div>
 
-        <div className="map-building building-three">
-          <Building2 size={24} />
-          <span>Hostel</span>
-        </div>
+        {mapZones.map((item, index) => {
+          const zone = getZoneData(item.name);
+          const available = zone ? zone.totalSlots - zone.occupiedSlots : 0;
+          const percentage = zone
+            ? Math.round((zone.occupiedSlots / zone.totalSlots) * 100)
+            : 0;
 
-        <div className="parking-grid-map">
-          {zones.map((zone) => {
-            const available = zone.totalSlots - zone.occupiedSlots;
-            const percentage = Math.round(
-              (zone.occupiedSlots / zone.totalSlots) * 100
-            );
+          return (
+            <div
+              key={index}
+              className="real-zone-marker small-zone-marker"
+              style={{ top: item.top, left: item.left }}
+            >
+              <ParkingCircle size={18} />
+              <strong>{item.name}</strong>
+              <span>{available} free</span>
+              <small>{percentage}% occupied</small>
+            </div>
+          );
+        })}
 
-            return (
-              <div className="clean-parking-card" key={zone._id}>
-                <ParkingCircle size={26} />
-                <h4>{zone.zoneName}</h4>
-                <h3>{available} Free</h3>
-                <p>{percentage}% occupied</p>
-              </div>
-            );
-          })}
-        </div>
-
-        <div className="inside-counter-clean">
+        <div className="real-campus-counter">
           <h2>{vehiclesInside}</h2>
           <p>Vehicles Inside Campus</p>
         </div>
