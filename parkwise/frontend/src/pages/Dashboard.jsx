@@ -1,11 +1,16 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { Car, LogIn, LogOut, ParkingCircle, Activity } from "lucide-react";
 import API from "../services/api";
+import CampusMap from "../components/CampusMap";
+import AnalyticsCharts from "../components/AnalyticsCharts";
+import AICameraSimulation from "../components/AICameraSimulation";
 
 function Dashboard() {
   const [zones, setZones] = useState([]);
   const [logs, setLogs] = useState([]);
   const [calculation, setCalculation] = useState("Waiting for simulation...");
+  const [isSimulating, setIsSimulating] = useState(false);
+  const simulationRef = useRef(null);
 
   const fetchZones = async () => {
     const res = await API.get("/parking");
@@ -14,6 +19,10 @@ function Dashboard() {
 
   useEffect(() => {
     fetchZones();
+  }, []);
+
+  useEffect(() => {
+  return () => clearInterval(simulationRef.current);
   }, []);
 
   const handleEntry = async (zoneId, zoneName) => {
@@ -43,6 +52,59 @@ function Dashboard() {
       alert(error.response?.data?.message || "Exit failed");
     }
   };
+
+  const startAutoSimulation = () => {
+  if (isSimulating) return;
+
+  setIsSimulating(true);
+
+  simulationRef.current = setInterval(async () => {
+    try {
+      const latestZones = await API.get("/parking");
+      const allZones = latestZones.data;
+
+      if (allZones.length === 0) return;
+
+      const randomZone = allZones[Math.floor(Math.random() * allZones.length)];
+      const available = randomZone.totalSlots - randomZone.occupiedSlots;
+
+      const action =
+        available === 0
+          ? "exit"
+          : randomZone.occupiedSlots === 0
+          ? "entry"
+          : Math.random() > 0.45
+          ? "entry"
+          : "exit";
+
+      if (action === "entry") {
+        const res = await API.put(`/parking/${randomZone._id}/entry`);
+        setCalculation(`AI Entry Calculation: ${res.data.formula}`);
+        setLogs((prev) => [
+          `AI detected vehicle entering ${randomZone.zoneName}`,
+          ...prev.slice(0, 9),
+        ]);
+      } else {
+        const res = await API.put(`/parking/${randomZone._id}/exit`);
+        setCalculation(`AI Exit Calculation: ${res.data.formula}`);
+        setLogs((prev) => [
+          `AI detected vehicle exiting ${randomZone.zoneName}`,
+          ...prev.slice(0, 9),
+        ]);
+      }
+
+      fetchZones();
+    } catch (error) {
+      console.log("Simulation error:", error.message);
+    }
+  }, 2500);
+};
+
+const stopAutoSimulation = () => {
+  clearInterval(simulationRef.current);
+  setIsSimulating(false);
+  setLogs((prev) => ["AI traffic simulation stopped", ...prev.slice(0, 9)]);
+};
 
   const totalSlots = zones.reduce((sum, zone) => sum + zone.totalSlots, 0);
   const occupiedSlots = zones.reduce((sum, zone) => sum + zone.occupiedSlots, 0);
@@ -94,6 +156,28 @@ function Dashboard() {
           </small>
         </div>
       </div>
+      <div className="simulation-controls">
+        <button
+          className={isSimulating ? "sim-active" : "sim-start"}
+          onClick={startAutoSimulation}
+          disabled={isSimulating}
+        >
+          Start AI Traffic Simulation
+        </button>
+
+        <button className="sim-stop" onClick={stopAutoSimulation}>
+          Stop Simulation
+        </button>
+      </div>
+
+      <CampusMap zones={zones} />
+      <AICameraSimulation
+        zones={zones}
+        fetchZones={fetchZones}
+        setLogs={setLogs}
+        setCalculation={setCalculation}
+      />
+      <AnalyticsCharts zones={zones} />
 
       <h2 className="section-title">Parking Zones</h2>
 
